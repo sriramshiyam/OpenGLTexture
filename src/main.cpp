@@ -22,10 +22,13 @@ MessageCallback(GLenum source,
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
+void processInput(GLFWwindow *window);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
+
+float mixValue = 0.2f;
 
 int main()
 {
@@ -57,9 +60,13 @@ int main()
     glEnable(GL_DEBUG_OUTPUT);
     glDebugMessageCallback(MessageCallback, 0);
 
-    Texture texture("naruto.png", true);
-    texture.setTextureWrapping(GL_REPEAT, GL_REPEAT);
-    texture.setTextureFiltering(GL_NEAREST, GL_NEAREST);
+    Texture texture1("naruto.png", false);
+    texture1.setTextureWrapping(GL_REPEAT, GL_REPEAT);
+    texture1.setTextureFiltering(GL_NEAREST, GL_NEAREST);
+
+    Texture texture2("onepiece.jpg", false);
+    texture2.setTextureWrapping(GL_REPEAT, GL_REPEAT);
+    texture2.setTextureFiltering(GL_NEAREST, GL_NEAREST);
 
     float vertices[] = {
         // positions          // colors           // texture coords
@@ -85,13 +92,24 @@ int main()
     elementBuffer.setBufferData(indices, sizeof(indices));
 
     Shader shader("texture.vs", "texture.fs");
-    shader.use();
+    // shader.use();
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture1.ID);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, texture2.ID);
 
     while (!glfwWindowShouldClose(window))
     {
+        processInput(window);
+
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
+        shader.use();
+        shader.setFloat("mixValue", mixValue);
+        shader.setInt("texture1", 0);
+        shader.setInt("texture2", 1);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         glfwSwapBuffers(window);
@@ -105,4 +123,23 @@ int main()
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 {
     glViewport(0, 0, width, height);
+}
+
+void processInput(GLFWwindow *window)
+{
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
+
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+    {
+        mixValue += 0.005f; // change this value accordingly (might be too slow or too fast based on system hardware)
+        if (mixValue >= 1.0f)
+            mixValue = 1.0f;
+    }
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+    {
+        mixValue -= 0.005f; // change this value accordingly (might be too slow or too fast based on system hardware)
+        if (mixValue <= 0.0f)
+            mixValue = 0.0f;
+    }
 }
